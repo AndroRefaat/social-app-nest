@@ -2,40 +2,43 @@ import {
   CanActivate,
   ExecutionContext,
   Injectable,
+  InternalServerErrorException,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
-import { Request } from 'express';
+import { TokenService } from '../token/token.service';
+import { UserRepositoryService } from 'src/DB/repositories/user.repository';
 
 
 @Injectable()
 export class AuthGuard implements CanActivate {
-  constructor(private jwtService: JwtService) {}
+    constructor(
+        private tokenService: TokenService,
+        private readonly userRepositoryService: UserRepositoryService
+    ) {}
 
-  async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request = context.switchToHttp().getRequest();
-    const token = this.extractTokenFromHeader(request);
-    if (!token) {
-      throw new UnauthorizedException('Token not found');
-    }
-    try {
-      const payload = await this.jwtService.verifyAsync(token, {
-        secret: process.env.JWT_SECRET
-      });
-      request['user'] = payload;
-    } catch (err) {
-      throw new UnauthorizedException('Invalid or expired token');
-    }
-    return true;
-  }
+    async canActivate(context: ExecutionContext): Promise<boolean> {
+        const request = context.switchToHttp().getRequest();
+        const authHeader = request.headers['authorization'];
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            throw new UnauthorizedException('Access token is required');
+        }
 
-  private extractTokenFromHeader(request: Request): string | null {
-    const authHeader = request.headers['authorization'];
-    if (!authHeader) {
-      return null;
-    }
+        const accessToken = authHeader.split(' ')[1];
+        const data = await this.tokenService.verifyToken(accessToken, {
+            secret: process.env.JWT_SECRET,
+        });
 
-    const [, token] = authHeader.split(' ');
-    return token || null;
-  }
+        const user = await this.userRepositoryService.findOne({ _id: data.userId });
+        if (!user) {
+            throw new UnauthorizedException('User not found');
+        }
+
+        if (user.passwordChangedAt && user.passwordChangedAt.getTime() !== data.passwordChangedAt) {
+            throw new UnauthorizedException('Token is no longer valid');
+        }
+
+        request.user = user;
+        return true;
+    }
 }

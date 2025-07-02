@@ -25,6 +25,30 @@ export class User {
     @Prop({required:true , type:String})
     phone:string
 
+@Prop({type:Date})
+    updatedAt:Date
+
+
+    @Prop({type:Date})
+    passwordChangedAt:Date
+
+
+    @Prop({default:false , type:Boolean})
+    isFreezed:boolean
+
+   
+    @Prop({
+        type: {
+          url: { type: String },
+          public_id: { type: String },
+        },
+        default: null,
+      })
+      profileImg: {
+        url: string;
+        public_id: string;
+      };
+      
 }
 
 export type UserDocument = HydratedDocument<User>

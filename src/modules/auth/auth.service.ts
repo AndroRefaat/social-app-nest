@@ -1,6 +1,6 @@
 import { ConflictException, Injectable } from '@nestjs/common';
 import { accessTokenDTO, forgetPasswordDTO, loginDTO, resetPasswordDTO, signupDTO, verifyDTO } from './DTO/auth.dto';
-import { UserRepositoryService } from './../../../DB/repositories/user.repository';
+import { UserRepositoryService } from 'src/DB/repositories/user.repository';
 import { encrypt } from 'src/utils/encryption/encryption';
 import * as randomstring from 'randomstring';
 import { generateOTPTemplate } from 'src/utils/emails/email.template';
