@@ -1,10 +1,10 @@
 import {
-  CanActivate,
-  ExecutionContext,
-  Injectable,
-  InternalServerErrorException,
-  NotFoundException,
-  UnauthorizedException,
+    CanActivate,
+    ExecutionContext,
+    Injectable,
+    InternalServerErrorException,
+    NotFoundException,
+    UnauthorizedException,
 } from '@nestjs/common';
 import { TokenService } from '../token/token.service';
 import { UserRepositoryService } from 'src/DB/repositories/user.repository';
@@ -15,7 +15,7 @@ export class AuthGuard implements CanActivate {
     constructor(
         private tokenService: TokenService,
         private readonly userRepositoryService: UserRepositoryService
-    ) {}
+    ) { }
 
     async canActivate(context: ExecutionContext): Promise<boolean> {
         const request = context.switchToHttp().getRequest();
@@ -25,9 +25,14 @@ export class AuthGuard implements CanActivate {
         }
 
         const accessToken = authHeader.split(' ')[1];
-        const data = await this.tokenService.verifyToken(accessToken, {
-            secret: process.env.JWT_SECRET,
-        });
+        let data;
+        try {
+            data = await this.tokenService.verifyToken(accessToken, {
+                secret: process.env.JWT_SECRET,
+            });
+        } catch (err) {
+            throw new UnauthorizedException('Invalid or expired token');
+        }
 
         const user = await this.userRepositoryService.findOne({ _id: data.userId });
         if (!user) {
